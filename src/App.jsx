@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import "./index.css";
+import { supabase } from "./supabase";
+
 
 export default function App() {
   const [page, setPage] = useState("auth");
