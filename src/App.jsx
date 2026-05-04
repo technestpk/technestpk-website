@@ -1,7 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./index.css";
 import { supabase } from "./supabase";
-
 
 export default function App() {
   const [page, setPage] = useState("auth");
@@ -10,17 +9,54 @@ export default function App() {
   const [password, setPassword] = useState("");
   const [search, setSearch] = useState("");
 
-  const products = [
-    { name: "VoltX Power Bank", price: "Rs 4,999" },
-    { name: "NeoBuds Pro", price: "Rs 3,999" },
-    { name: "Turbo Charger 65W", price: "Rs 2,499" },
-    { name: "Gaming Cable RGB", price: "Rs 1,299" },
-    { name: "Smart Watch Ultra", price: "Rs 6,999" },
-    { name: "Wireless Mouse", price: "Rs 2,199" }
-  ];
+  // 🔥 ADMIN STATE
+  const [isAdmin, setIsAdmin] = useState(false);
 
+  // 🔥 PRODUCT STATES
+  const [products, setProducts] = useState([]);
+  const [name, setName] = useState("");
+  const [price, setPrice] = useState("");
+  const [image, setImage] = useState("");
+  const [category, setCategory] = useState("");
+
+  // 🔥 FETCH PRODUCTS FROM SUPABASE
+  const fetchProducts = async () => {
+    const { data, error } = await supabase.from("products").select("*");
+    if (!error) setProducts(data);
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  // 🔥 ADD PRODUCT
+  const addProduct = async () => {
+    const { error } = await supabase.from("products").insert([
+      {
+        name,
+        price: Number(price),
+        image_url: image,
+        category,
+      },
+    ]);
+
+    if (!error) {
+      alert("Product Added 🔥");
+      setName("");
+      setPrice("");
+      setImage("");
+      setCategory("");
+      fetchProducts();
+    } else {
+      alert("Error adding product");
+    }
+  };
+
+  // 🔥 SMART SEARCH
   const filtered = products.filter((item) =>
-    item.name.toLowerCase().includes(search.toLowerCase())
+    `${item.name} ${item.category} ${item.brand || ""} ${item.model || ""}`
+      .toLowerCase()
+      .includes(search.toLowerCase())
   );
 
   const submitAuth = () => {
@@ -31,6 +67,54 @@ export default function App() {
     }
   };
 
+  // 🔥 ADMIN PANEL UI
+  if (isAdmin) {
+    return (
+      <div className="main-bg">
+        <h1 style={{ textAlign: "center" }}>Admin Panel 🔥</h1>
+
+        <div className="search-wrap">
+          <input
+            className="search-box"
+            placeholder="Product Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <input
+            className="search-box"
+            placeholder="Price"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+          />
+          <input
+            className="search-box"
+            placeholder="Image URL"
+            value={image}
+            onChange={(e) => setImage(e.target.value)}
+          />
+          <input
+            className="search-box"
+            placeholder="Category"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          />
+
+          <button className="main-btn" onClick={addProduct}>
+            Add Product
+          </button>
+
+          <button
+            className="logout-btn"
+            onClick={() => setIsAdmin(false)}
+          >
+            Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 🔐 AUTH PAGE
   if (page === "auth") {
     return (
       <div className="main-bg auth-wrap">
@@ -80,15 +164,24 @@ export default function App() {
     );
   }
 
+  // 🏠 HOME PAGE
   return (
     <div className="main-bg">
       <header className="topbar">
         <h1 className="brand-title small">
           TechNest <span>PK</span>
         </h1>
-        <button className="logout-btn" onClick={() => setPage("auth")}>
-          Logout
-        </button>
+
+        <div>
+          <button onClick={() => setIsAdmin(true)}>Admin</button>
+
+          <button
+            className="logout-btn"
+            onClick={() => setPage("auth")}
+          >
+            Logout
+          </button>
+        </div>
       </header>
 
       <section className="hero-box">
@@ -108,9 +201,15 @@ export default function App() {
       <section className="grid-wrap">
         {filtered.map((item, index) => (
           <div key={index} className="product-card">
-            <div className="img-box">⚡</div>
+            <div className="img-box">
+              {item.image_url ? (
+                <img src={item.image_url} alt="" width="100%" />
+              ) : (
+                "⚡"
+              )}
+            </div>
             <h3>{item.name}</h3>
-            <p>{item.price}</p>
+            <p>Rs {item.price}</p>
             <button className="main-btn">Add To Cart</button>
           </div>
         ))}
