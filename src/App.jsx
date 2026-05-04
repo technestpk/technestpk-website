@@ -24,17 +24,11 @@ export default function App() {
   // 🔥 FETCH DATA
   const fetchProducts = async () => {
     const { data, error } = await supabase.from("products").select("*");
-
-    if (error) {
-      console.log(error);
-    } else {
-      setProducts(data);
-    }
+    if (!error) setProducts(data);
   };
 
   const fetchCategories = async () => {
     const { data, error } = await supabase.from("categories").select("*");
-
     if (!error) setCategories(data);
   };
 
@@ -81,11 +75,45 @@ export default function App() {
       .includes(search.toLowerCase())
   );
 
-  const submitAuth = () => {
-    if (email && password.length >= 4) {
-      setPage("home");
-    } else {
+  // 🔥 FIXED AUTH (IMPORTANT)
+  const submitAuth = async () => {
+    if (!email || password.length < 4) {
       alert("Enter valid email & password");
+      return;
+    }
+
+    // SIGNUP
+    if (mode === "signup") {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (error) {
+        alert(error.message);
+      } else {
+        alert("Signup successful 🔥 Now login");
+        setMode("login");
+      }
+    }
+
+    // LOGIN
+    else {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        alert(error.message);
+      } else {
+        setPage("home");
+
+        // 🔥 ADMIN EMAIL (change later)
+        if (email === "admin@technest.pk") {
+          setIsAdmin(true);
+        }
+      }
     }
   };
 
@@ -117,7 +145,6 @@ export default function App() {
             onChange={(e) => setImage(e.target.value)}
           />
 
-          {/* ✅ CATEGORY DROPDOWN */}
           <select
             className="search-box"
             value={category}
@@ -133,10 +160,7 @@ export default function App() {
             Add Product
           </button>
 
-          <button
-            className="logout-btn"
-            onClick={() => setIsAdmin(false)}
-          >
+          <button className="logout-btn" onClick={() => setIsAdmin(false)}>
             Back
           </button>
         </div>
@@ -144,7 +168,7 @@ export default function App() {
     );
   }
 
-  // 🔐 AUTH
+  // 🔐 AUTH PAGE
   if (page === "auth") {
     return (
       <div className="main-bg auth-wrap">
@@ -174,7 +198,7 @@ export default function App() {
           />
 
           <button className="main-btn" onClick={submitAuth}>
-            Continue
+            {mode === "login" ? "Login" : "Create Account"}
           </button>
         </div>
       </div>
@@ -204,7 +228,6 @@ export default function App() {
         />
       </div>
 
-      {/* 🔥 LOADING */}
       {loading ? (
         <h2 style={{ textAlign: "center" }}>Loading...</h2>
       ) : (
