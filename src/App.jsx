@@ -23,13 +23,13 @@ export default function App() {
 
   // 🔥 FETCH DATA
   const fetchProducts = async () => {
-    const { data, error } = await supabase.from("products").select("*");
-    if (!error) setProducts(data);
+    const { data } = await supabase.from("products").select("*");
+    if (data) setProducts(data);
   };
 
   const fetchCategories = async () => {
-    const { data, error } = await supabase.from("categories").select("*");
-    if (!error) setCategories(data);
+    const { data } = await supabase.from("categories").select("*");
+    if (data) setCategories(data);
   };
 
   useEffect(() => {
@@ -68,54 +68,53 @@ export default function App() {
     }
   };
 
+  // 🔥 AUTH SYSTEM (FINAL FIXED)
+  const submitAuth = async () => {
+    if (!email || password.length < 6) {
+      return alert("Password min 6 characters hona chahiye");
+    }
+
+    try {
+      if (mode === "signup") {
+        const { error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password: password.trim(),
+        });
+
+        if (error) {
+          alert(error.message);
+        } else {
+          alert("Signup successful 🔥 Now login");
+          setMode("login");
+        }
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password: password.trim(),
+        });
+
+        if (error) {
+          alert(error.message);
+        } else {
+          setPage("home");
+
+          if (email === "admin@technest.pk") {
+            setIsAdmin(true);
+          }
+        }
+      }
+    } catch (err) {
+      console.log(err);
+      alert("Something went wrong");
+    }
+  };
+
   // 🔍 SEARCH
   const filtered = products.filter((item) =>
     `${item.name} ${item.category}`
       .toLowerCase()
       .includes(search.toLowerCase())
   );
-
-  // 🔥 FIXED AUTH (IMPORTANT)
-  const submitAuth = async () => {
-    if (!email || password.length < 4) {
-      alert("Enter valid email & password");
-      return;
-    }
-
-    // SIGNUP
-    if (mode === "signup") {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-
-      if (error) {
-        alert(error.message);
-      } else {
-        alert("Signup successful 🔥 Now login");
-        setMode("login");
-      }
-    }
-
-    // LOGIN
-    else {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        alert(error.message);
-      } else {
-        setPage("home");
-
-        // 🔥 ADMIN EMAIL (change later)
-        if (email === "admin@technest.pk") {
-          setIsAdmin(true);
-        }
-      }
-    }
-  };
 
   // 🔥 ADMIN PANEL
   if (isAdmin) {
@@ -160,7 +159,10 @@ export default function App() {
             Add Product
           </button>
 
-          <button className="logout-btn" onClick={() => setIsAdmin(false)}>
+          <button
+            className="logout-btn"
+            onClick={() => setIsAdmin(false)}
+          >
             Back
           </button>
         </div>
